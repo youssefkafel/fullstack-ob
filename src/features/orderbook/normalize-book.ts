@@ -119,6 +119,7 @@ function accumulate(
       priceText: formatDecimalString(level.px),
       price,
       size,
+      orderCount: level.n,
       baseTotal,
       usdSize,
       usdTotal,
@@ -135,6 +136,7 @@ function rowsEqual(left: BookRow, right: BookRow): boolean {
     Object.is(left.priceText, right.priceText) &&
     Object.is(left.price, right.price) &&
     Object.is(left.size, right.size) &&
+    Object.is(left.orderCount, right.orderCount) &&
     Object.is(left.baseTotal, right.baseTotal) &&
     Object.is(left.usdSize, right.usdSize) &&
     Object.is(left.usdTotal, right.usdTotal) &&

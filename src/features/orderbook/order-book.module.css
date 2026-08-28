@@ -12,6 +12,7 @@
   --line: #292929;
   --line-soft: #252525;
   --ink: #e6e6e6;
+  --ink-bright: #f2f2f2;
   --ink-mid: #989898;
   --ink-soft: #8a8a8a;
   --ink-faint: #777777;
@@ -209,6 +210,12 @@
   padding: 0 13px;
 }
 
+.row:focus-visible {
+  z-index: 1;
+  outline: 1px solid var(--ink-mid);
+  outline-offset: -1px;
+}
+
 .cell,
 .cellNum {
   position: relative;
@@ -223,68 +230,87 @@
   position: absolute;
   inset: 2px auto 2px 0;
   width: var(--depth);
+  background: var(--depth-fill);
   pointer-events: none;
 }
 
-.row[data-side="ask"] .depth {
-  background: var(--ask-depth);
-}
-
-.row[data-side="bid"] .depth {
-  background: var(--bid-depth);
-}
-
 .row[data-side="ask"] {
-  --row-flash-color: rgba(199, 74, 71, 0.16);
+  --depth-fill: var(--ask-depth);
+  --depth-pulse-fill: color-mix(in srgb, var(--ask-depth) 80%, var(--down));
 }
 
 .row[data-side="bid"] {
-  --row-flash-color: rgba(29, 157, 117, 0.18);
+  --depth-fill: var(--bid-depth);
+  --depth-pulse-fill: color-mix(in srgb, var(--bid-depth) 80%, var(--live));
 }
 
-.row[data-flash-cycle="0"] {
-  animation: flash-cycle-0 600ms ease-out;
+.row[data-best="true"] .cell {
+  color: var(--ink-bright);
+  font-weight: 600;
 }
 
-.row[data-flash-cycle="1"] {
-  animation: flash-cycle-1 600ms ease-out;
+.row[data-best="true"][data-side="ask"] {
+  box-shadow: inset 0 -1px
+    color-mix(in srgb, var(--down) 32%, transparent);
+}
+
+.row[data-best="true"][data-side="bid"] {
+  box-shadow: inset 0 1px color-mix(in srgb, var(--live) 32%, transparent);
+}
+
+.row[data-flash-cycle="0"] .depth {
+  animation: flash-cycle-0 225ms ease-out;
+}
+
+.row[data-flash-cycle="1"] .depth {
+  animation: flash-cycle-1 225ms ease-out;
 }
 
 /* Keep distinct names: alternating animation-name restarts consecutive flashes. */
 
 @keyframes flash-cycle-0 {
   from {
-    background-color: var(--row-flash-color);
+    background-color: var(--depth-pulse-fill);
   }
   to {
-    background-color: transparent;
+    background-color: var(--depth-fill);
   }
 }
 
 @keyframes flash-cycle-1 {
   from {
-    background-color: var(--row-flash-color);
+    background-color: var(--depth-pulse-fill);
   }
   to {
-    background-color: transparent;
+    background-color: var(--depth-fill);
   }
 }
 
 .rowTooltip {
   position: absolute;
   right: calc(100% + 8px);
-  top: clamp(62px, var(--tooltip-anchor-y), calc(100% - 62px));
+  top: clamp(65px, var(--tooltip-anchor-y), calc(100% - 65px));
   z-index: 2;
   display: none;
-  width: 228px;
-  min-height: 108px;
+  width: 252px;
+  min-height: 130px;
   padding: 9px 11px;
   transform: translateY(-50%);
   border: 1px solid var(--line);
   border-radius: 5px;
   background: var(--raised);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+.rowTooltip::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -24px;
+  width: 24px;
+  height: 35px;
+  transform: translateY(-50%);
 }
 
 .tooltipRow {
@@ -297,7 +323,11 @@
 }
 
 .tooltipValue {
-  flex: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-data);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -314,6 +344,22 @@
   }
 
   .rowTooltip {
+    display: block;
+  }
+}
+
+@media (min-width: 880px) {
+  .shell:has(.row[aria-describedby]:focus-visible)
+    .row[data-tooltip-range="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 1px 0;
+    z-index: 0;
+    background: rgba(230, 230, 230, 0.07);
+    pointer-events: none;
+  }
+
+  .shell:has(.row[aria-describedby]:focus-visible) .rowTooltip {
     display: block;
   }
 }
@@ -446,7 +492,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .row[data-flash-cycle] {
+  .row[data-flash-cycle] .depth {
     animation: none;
   }
 

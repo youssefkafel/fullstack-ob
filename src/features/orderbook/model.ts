@@ -99,6 +99,7 @@ export interface BookRow {
   priceText: string;
   price: number;
   size: number;
+  orderCount: number;
   baseTotal: number;
   usdSize: number;
   usdTotal: number;

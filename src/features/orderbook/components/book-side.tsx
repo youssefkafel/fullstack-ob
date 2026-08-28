@@ -10,6 +10,25 @@ interface BookSideProps {
   tooltipId: string;
   onRowHover: RowHoverHandler;
   onHoverEnd: () => void;
+  onDismiss: () => void;
+}
+
+function isBestLevel(
+  side: "ask" | "bid",
+  index: number,
+  rowCount: number,
+): boolean {
+  if (
+    !Number.isInteger(index) ||
+    !Number.isInteger(rowCount) ||
+    rowCount <= 0 ||
+    index < 0 ||
+    index >= rowCount
+  ) {
+    return false;
+  }
+
+  return side === "ask" ? index === rowCount - 1 : index === 0;
 }
 
 export function BookSide({
@@ -20,6 +39,7 @@ export function BookSide({
   tooltipId,
   onRowHover,
   onHoverEnd,
+  onDismiss,
 }: BookSideProps) {
   return (
     <div
@@ -34,6 +54,7 @@ export function BookSide({
           side={side}
           index={index}
           denomination={denomination}
+          isBest={isBestLevel(side, index, rows.length)}
           isTooltipAnchor={hoveredIndex === index}
           isTooltipRange={
             hoveredIndex !== null &&
@@ -41,6 +62,8 @@ export function BookSide({
           }
           tooltipId={tooltipId}
           onHover={onRowHover}
+          onHoverEnd={onHoverEnd}
+          onDismiss={onDismiss}
         />
       ))}
     </div>

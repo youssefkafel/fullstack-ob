@@ -29,6 +29,7 @@ import { ConnectionStatus } from "./components/connection-status";
 import styles from "./order-book.module.css";
 
 const TOOLTIP_ID = "book-row-tooltip";
+const HOVER_CLEAR_DELAY_MS = 100;
 const distanceFormat = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 4,
   maximumFractionDigits: 4,
@@ -38,6 +39,9 @@ const assetTotalFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 5,
 });
 const usdcTotalFormat = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 0,
+});
+const orderCountFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 const averagePriceFormats = [
@@ -68,28 +72,53 @@ export function OrderBook() {
   const state = useOrderBook(store);
   const shellRef = useRef<HTMLElement>(null);
   const [hoveredRow, setHoveredRow] = useState<HoveredRow | null>(null);
+  const hoverClearTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     store.start();
     return () => store.dispose();
   }, [store]);
 
-  const handleRowHover = useCallback<RowHoverHandler>((side, index, element) => {
-    const shell = shellRef.current;
-    if (!shell) return;
-    const shellRect = shell.getBoundingClientRect();
-    const rowRect = element.getBoundingClientRect();
-    const anchorY = rowRect.top - shellRect.top + rowRect.height / 2;
-    setHoveredRow((current) =>
-      current?.side === side &&
-      current.index === index &&
-      current.anchorY === anchorY
-        ? current
-        : { side, index, anchorY },
-    );
+  const cancelHoverClear = useCallback(() => {
+    if (hoverClearTimeoutRef.current !== null) {
+      window.clearTimeout(hoverClearTimeoutRef.current);
+      hoverClearTimeoutRef.current = null;
+    }
   }, []);
 
-  const clearHoveredRow = useCallback(() => setHoveredRow(null), []);
+  const clearHoveredRow = useCallback(() => {
+    cancelHoverClear();
+    setHoveredRow(null);
+  }, [cancelHoverClear]);
+
+  const scheduleHoverClear = useCallback(() => {
+    cancelHoverClear();
+    hoverClearTimeoutRef.current = window.setTimeout(() => {
+      hoverClearTimeoutRef.current = null;
+      setHoveredRow(null);
+    }, HOVER_CLEAR_DELAY_MS);
+  }, [cancelHoverClear]);
+
+  useEffect(() => cancelHoverClear, [cancelHoverClear]);
+
+  const handleRowHover = useCallback<RowHoverHandler>(
+    (side, index, element) => {
+      cancelHoverClear();
+      const shell = shellRef.current;
+      if (!shell) return;
+      const shellRect = shell.getBoundingClientRect();
+      const rowRect = element.getBoundingClientRect();
+      const anchorY = rowRect.top - shellRect.top + rowRect.height / 2;
+      setHoveredRow((current) =>
+        current?.side === side &&
+        current.index === index &&
+        current.anchorY === anchorY
+          ? current
+          : { side, index, anchorY },
+      );
+    },
+    [cancelHoverClear],
+  );
 
   const handleCoinChange = (coin: Coin) => {
     clearHoveredRow();
@@ -144,6 +173,10 @@ export function OrderBook() {
     Number.isFinite(hoveredBookRow.baseTotal) &&
     hoveredBookRow.baseTotal > 0 &&
     Number.isFinite(hoveredBookRow.usdTotal) &&
+    Number.isFinite(hoveredBookRow.size) &&
+    hoveredBookRow.size >= 0 &&
+    Number.isInteger(hoveredBookRow.orderCount) &&
+    hoveredBookRow.orderCount >= 0 &&
     Number.isFinite(distancePercent) &&
     Number.isFinite(averagePrice)
       ? {
@@ -151,6 +184,8 @@ export function OrderBook() {
           averagePrice,
           totalAsset: hoveredBookRow.baseTotal,
           totalUsdc: hoveredBookRow.usdTotal,
+          levelSize: hoveredBookRow.size,
+          orderCount: hoveredBookRow.orderCount,
         }
       : null;
   const priceIncrement =
@@ -189,7 +224,8 @@ export function OrderBook() {
               }
               tooltipId={TOOLTIP_ID}
               onRowHover={handleRowHover}
-              onHoverEnd={clearHoveredRow}
+              onHoverEnd={scheduleHoverClear}
+              onDismiss={clearHoveredRow}
             />
             <SpreadRow
               spread={state.book.spread}
@@ -206,7 +242,8 @@ export function OrderBook() {
               }
               tooltipId={TOOLTIP_ID}
               onRowHover={handleRowHover}
-              onHoverEnd={clearHoveredRow}
+              onHoverEnd={scheduleHoverClear}
+              onDismiss={clearHoveredRow}
             />
           </>
         ) : (
@@ -233,6 +270,8 @@ export function OrderBook() {
               "--tooltip-anchor-y": `${hoveredRow.anchorY}px`,
             } as CSSProperties
           }
+          onPointerEnter={cancelHoverClear}
+          onPointerLeave={scheduleHoverClear}
         >
           <div className={styles.tooltipRow}>
             <span>Distance from Mid</span>
@@ -258,6 +297,15 @@ export function OrderBook() {
             <span>Total (USDC)</span>
             <span className={styles.tooltipValue}>
               {usdcTotalFormat.format(tooltipMetrics.totalUsdc)}
+            </span>
+          </div>
+          <div className={styles.tooltipRow}>
+            <span>Level</span>
+            <span className={styles.tooltipValue}>
+              {assetTotalFormat.format(tooltipMetrics.levelSize)}{" "}
+              {state.selection.coin} ·{" "}
+              {orderCountFormat.format(tooltipMetrics.orderCount)}{" "}
+              {tooltipMetrics.orderCount === 1 ? "order" : "orders"}
             </span>
           </div>
         </div>
