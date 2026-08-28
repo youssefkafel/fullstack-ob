@@ -13,24 +13,6 @@ interface BookSideProps {
   onDismiss: () => void;
 }
 
-function isBestLevel(
-  side: "ask" | "bid",
-  index: number,
-  rowCount: number,
-): boolean {
-  if (
-    !Number.isInteger(index) ||
-    !Number.isInteger(rowCount) ||
-    rowCount <= 0 ||
-    index < 0 ||
-    index >= rowCount
-  ) {
-    return false;
-  }
-
-  return side === "ask" ? index === rowCount - 1 : index === 0;
-}
-
 export function BookSide({
   side,
   rows,
@@ -54,7 +36,7 @@ export function BookSide({
           side={side}
           index={index}
           denomination={denomination}
-          isBest={isBestLevel(side, index, rows.length)}
+          isBest={side === "ask" ? index === rows.length - 1 : index === 0}
           isTooltipAnchor={hoveredIndex === index}
           isTooltipRange={
             hoveredIndex !== null &&

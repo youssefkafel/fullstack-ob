@@ -11,18 +11,18 @@ import type {
   OrderBookViewState,
 } from "./model";
 
-export interface BookClientHandle {
+interface BookClientHandle {
   start(): void;
   setSelection(selection: BookSelection): void;
   dispose(): void;
 }
 
-export type BookClientFactory = (
+type BookClientFactory = (
   selection: BookSelection,
   callbacks: BookClientCallbacks,
 ) => BookClientHandle;
 
-export interface FrameScheduler {
+interface FrameScheduler {
   request(callback: FrameRequestCallback): number;
   cancel(id: number): void;
 }

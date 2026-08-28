@@ -15,7 +15,7 @@ export interface BookClientCallbacks {
   onState(state: ConnectionState): void;
 }
 
-export interface BookClientEnvironment {
+interface BookClientEnvironment {
   createSocket(url: string): WebSocket;
   now(): number;
   random(): number;

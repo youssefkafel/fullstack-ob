@@ -23,7 +23,6 @@ export type ConnectionState =
   | "live"
   | "reconnecting"
   | "offline";
-export type LevelChange = "new" | "up" | "down" | null;
 
 interface AggregationDefinition {
   nSigFigs: ProtocolSigFigs;
@@ -88,6 +87,28 @@ export interface WsLevel {
   n: number;
 }
 
+export function isWsLevel(value: unknown): value is WsLevel {
+  if (typeof value !== "object" || value === null) return false;
+  if (
+    !("px" in value) ||
+    typeof value.px !== "string" ||
+    value.px.trim() === "" ||
+    !("sz" in value) ||
+    typeof value.sz !== "string" ||
+    value.sz.trim() === "" ||
+    !("n" in value) ||
+    typeof value.n !== "number" ||
+    !Number.isInteger(value.n) ||
+    value.n < 0
+  ) {
+    return false;
+  }
+
+  const price = Number(value.px);
+  const size = Number(value.sz);
+  return Number.isFinite(price) && Number.isFinite(size) && size >= 0;
+}
+
 export interface WsBook {
   coin: string;
   levels: [WsLevel[], WsLevel[]];
@@ -104,7 +125,7 @@ export interface BookRow {
   usdSize: number;
   usdTotal: number;
   depthRatio: number;
-  change: LevelChange;
+  changed: boolean;
   flashCycle: 0 | 1;
 }
 

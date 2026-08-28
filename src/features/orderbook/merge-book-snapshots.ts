@@ -1,38 +1,19 @@
-import type { WsBook, WsLevel } from "./model";
+import { isWsLevel, type WsBook, type WsLevel } from "./model";
 
 const FAST_LEVEL_LIMIT = 5;
 const MERGED_LEVEL_LIMIT = 20;
 // Keep in sync with normalizeBook's default visible-row limit.
 const PUBLISH_LEVEL_REQUIREMENT = 12;
 
-export type BookSnapshotKind = "fast" | "slow";
+type BookSnapshotKind = "fast" | "slow";
 
-export interface ClassifiedBookSnapshot {
+interface ClassifiedBookSnapshot {
   kind: BookSnapshotKind;
   snapshot: WsBook;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-function isLevel(value: unknown): value is WsLevel {
-  if (!isObject(value)) return false;
-  if (
-    typeof value.px !== "string" ||
-    value.px.trim() === "" ||
-    typeof value.sz !== "string" ||
-    value.sz.trim() === "" ||
-    typeof value.n !== "number" ||
-    !Number.isInteger(value.n) ||
-    value.n < 0
-  ) {
-    return false;
-  }
-
-  const price = Number(value.px);
-  const size = Number(value.sz);
-  return Number.isFinite(price) && Number.isFinite(size) && size >= 0;
 }
 
 export function classifyBookSnapshot(
@@ -54,8 +35,8 @@ export function classifyBookSnapshot(
   if (
     !Array.isArray(bids) ||
     !Array.isArray(asks) ||
-    !bids.every(isLevel) ||
-    !asks.every(isLevel)
+    !bids.every(isWsLevel) ||
+    !asks.every(isWsLevel)
   ) {
     return null;
   }

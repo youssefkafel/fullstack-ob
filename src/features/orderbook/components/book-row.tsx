@@ -90,8 +90,7 @@ export const BookRow = memo(function BookRow({
       className={styles.row}
       data-side={side}
       data-best={isBest || undefined}
-      data-change={row.change ?? undefined}
-      data-flash-cycle={row.change === null ? undefined : row.flashCycle}
+      data-flash-cycle={row.changed ? row.flashCycle : undefined}
       data-tooltip-range={isTooltipRange || undefined}
       style={
         { "--depth": `${(row.depthRatio * 100).toFixed(2)}%` } as CSSProperties

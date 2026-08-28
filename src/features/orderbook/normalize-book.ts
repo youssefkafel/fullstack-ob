@@ -1,6 +1,6 @@
+import { isWsLevel } from "./model";
 import type {
   BookRow,
-  LevelChange,
   NormalizeOptions,
   NormalizedBook,
   WsBook,
@@ -14,7 +14,7 @@ interface L2BookEnvelope {
   data: WsBook;
 }
 
-export function formatDecimalString(raw: string): string {
+function formatDecimalString(raw: string): string {
   const [integer, fraction] = raw.split(".");
   const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return fraction === undefined ? grouped : `${grouped}.${fraction}`;
@@ -22,25 +22,6 @@ export function formatDecimalString(raw: string): string {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-function isLevel(value: unknown): value is WsLevel {
-  if (!isObject(value)) return false;
-  if (
-    typeof value.px !== "string" ||
-    value.px.trim() === "" ||
-    typeof value.sz !== "string" ||
-    value.sz.trim() === "" ||
-    typeof value.n !== "number" ||
-    !Number.isInteger(value.n) ||
-    value.n < 0
-  ) {
-    return false;
-  }
-
-  const price = Number(value.px);
-  const size = Number(value.sz);
-  return Number.isFinite(price) && Number.isFinite(size) && size >= 0;
 }
 
 function parseEnvelope(input: unknown, expectedCoin: string): L2BookEnvelope | null {
@@ -63,8 +44,8 @@ function parseEnvelope(input: unknown, expectedCoin: string): L2BookEnvelope | n
   if (
     !Array.isArray(bids) ||
     !Array.isArray(asks) ||
-    !bids.every(isLevel) ||
-    !asks.every(isLevel)
+    !bids.every(isWsLevel) ||
+    !asks.every(isWsLevel)
   ) {
     return null;
   }
@@ -77,19 +58,6 @@ function parseEnvelope(input: unknown, expectedCoin: string): L2BookEnvelope | n
       time: data.time,
     },
   };
-}
-
-function levelChange(
-  priceRaw: string,
-  size: number,
-  previousByPrice: ReadonlyMap<string, BookRow> | null,
-): LevelChange {
-  if (!previousByPrice) return null;
-  const previousSize = previousByPrice.get(priceRaw)?.size;
-  if (previousSize === undefined) return "new";
-  if (size > previousSize) return "up";
-  if (size < previousSize) return "down";
-  return null;
 }
 
 function accumulate(
@@ -105,10 +73,12 @@ function accumulate(
     const usdSize = price * size;
     baseTotal += size;
     usdTotal += usdSize;
-    const change = levelChange(level.px, size, previousByPrice);
     const previousRow = previousByPrice?.get(level.px);
+    const changed =
+      previousByPrice !== null &&
+      (previousRow === undefined || size !== previousRow.size);
     const flashCycle =
-      previousRow && change !== null
+      previousRow && changed
         ? previousRow.flashCycle === 0
           ? 1
           : 0
@@ -124,7 +94,7 @@ function accumulate(
       usdSize,
       usdTotal,
       depthRatio: 0,
-      change,
+      changed,
       flashCycle,
     };
   });
@@ -141,7 +111,7 @@ function rowsEqual(left: BookRow, right: BookRow): boolean {
     Object.is(left.usdSize, right.usdSize) &&
     Object.is(left.usdTotal, right.usdTotal) &&
     Object.is(left.depthRatio, right.depthRatio) &&
-    Object.is(left.change, right.change) &&
+    Object.is(left.changed, right.changed) &&
     Object.is(left.flashCycle, right.flashCycle)
   );
 }
