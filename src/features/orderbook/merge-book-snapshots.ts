@@ -2,6 +2,8 @@ import type { WsBook, WsLevel } from "./model";
 
 const FAST_LEVEL_LIMIT = 5;
 const MERGED_LEVEL_LIMIT = 20;
+// Keep in sync with normalizeBook's default visible-row limit.
+const PUBLISH_LEVEL_REQUIREMENT = 12;
 
 export type BookSnapshotKind = "fast" | "slow";
 
@@ -72,7 +74,7 @@ function mergeSide(
   slow: WsLevel[],
   side: "bid" | "ask",
 ): WsLevel[] {
-  if (fast.length < FAST_LEVEL_LIMIT) return fast.slice(0, MERGED_LEVEL_LIMIT);
+  if (fast.length === 0) return [];
 
   const worstFastPrice = Number(fast[fast.length - 1].px);
   const merged = fast.slice(0, MERGED_LEVEL_LIMIT);
@@ -96,12 +98,17 @@ export function mergeBookSnapshots(
   if (!slow) return null;
   if (!fast || slow.time > fast.time) return slow;
 
+  const mergedBids = mergeSide(fast.levels[0], slow.levels[0], "bid");
+  const mergedAsks = mergeSide(fast.levels[1], slow.levels[1], "ask");
+  const useSlowDepth =
+    mergedBids.length <
+      Math.min(slow.levels[0].length, PUBLISH_LEVEL_REQUIREMENT) ||
+    mergedAsks.length <
+      Math.min(slow.levels[1].length, PUBLISH_LEVEL_REQUIREMENT);
+
   return {
     coin: fast.coin,
-    levels: [
-      mergeSide(fast.levels[0], slow.levels[0], "bid"),
-      mergeSide(fast.levels[1], slow.levels[1], "ask"),
-    ],
+    levels: useSlowDepth ? slow.levels : [mergedBids, mergedAsks],
     time: fast.time,
   };
 }
