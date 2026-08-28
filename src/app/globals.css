@@ -1,0 +1,30 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: #e8e6e2;
+  color: #1c1c1c;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+/* Page shell for the single orderbook view: centers the widget without
+   imposing a fixed height that could clip the 24-row ladder. */
+.page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 28px 12px;
+}

@@ -1,0 +1,456 @@
+/*
+ * Compact live orderbook — faithful to the approved narrow reference.
+ * Identity is spent in exactly two places: the maroon/teal cumulative
+ * depth ladder and precise tabular monospace numerals. Everything else
+ * stays flat, charcoal, and quiet.
+ */
+
+.shell {
+  --frame: #414141;
+  --surface: #151515;
+  --raised: #222222;
+  --line: #292929;
+  --line-soft: #252525;
+  --ink: #e6e6e6;
+  --ink-mid: #989898;
+  --ink-soft: #8a8a8a;
+  --ink-faint: #777777;
+  --accent: #ff542f;
+  --ask-depth: #472021;
+  --bid-depth: #174438;
+  --live: #1d9d75;
+  --warn: #d99a2b;
+  --down: #c74a47;
+  --font-data: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  position: relative;
+  color-scheme: dark;
+  width: min(374px, calc(100vw - 24px));
+  background: var(--frame);
+  border: 1px solid #5b5b5b;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+  padding: 13px;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+/* ---- market header ---- */
+
+.marketHeader {
+  position: relative;
+  min-height: 58px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.marketHeader:hover {
+  border-color: var(--ink-soft);
+}
+
+.marketHeader:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.marketLogo {
+  flex: none;
+  width: 27px;
+  height: 27px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+}
+
+.marketLogo[data-coin="BTC"] {
+  background-image: url("./assets/BTC.svg");
+}
+
+.marketLogo[data-coin="ETH"] {
+  background-image: url("./assets/ETH.svg");
+}
+
+.marketMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.marketName {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+
+.marketKind {
+  font-size: 11px;
+  color: #888;
+  margin-top: 5px;
+}
+
+.headerDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+
+.marketChevron {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin: -4px 2px 0 0;
+  border-right: 1px solid var(--ink-soft);
+  border-bottom: 1px solid var(--ink-soft);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.marketSelect {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.marketSelect select {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ---- section label ---- */
+
+.sectionLabel {
+  margin: 7px 0 9px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #aaa;
+}
+
+/* ---- panel ---- */
+
+.panel {
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.panelTitle {
+  position: relative;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.panelTitle::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 54px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.columns {
+  height: 37px;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 1fr;
+  align-items: center;
+  padding: 0 13px;
+  color: var(--ink-faint);
+  font-size: 10px;
+}
+
+.columns .cellNum {
+  text-align: right;
+}
+
+/* ---- ladder ---- */
+
+.bookSide {
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  /* 12 rendered rows × 27px; keep in sync with normalizeBook's default limit. */
+  min-height: 324px;
+}
+
+.bookSide[data-side="ask"] {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 1fr;
+  height: 27px;
+  align-items: center;
+  padding: 0 13px;
+}
+
+.cell,
+.cellNum {
+  position: relative;
+  z-index: 1;
+}
+
+.row .cellNum {
+  text-align: right;
+}
+
+.depth {
+  position: absolute;
+  inset: 2px auto 2px 0;
+  width: var(--depth);
+  pointer-events: none;
+}
+
+.row[data-side="ask"] .depth {
+  background: var(--ask-depth);
+}
+
+.row[data-side="bid"] .depth {
+  background: var(--bid-depth);
+}
+
+.row[data-side="ask"] {
+  --row-flash-color: rgba(199, 74, 71, 0.16);
+}
+
+.row[data-side="bid"] {
+  --row-flash-color: rgba(29, 157, 117, 0.18);
+}
+
+.row[data-flash-cycle="0"] {
+  animation: flash-cycle-0 600ms ease-out;
+}
+
+.row[data-flash-cycle="1"] {
+  animation: flash-cycle-1 600ms ease-out;
+}
+
+/* Keep distinct names: alternating animation-name restarts consecutive flashes. */
+
+@keyframes flash-cycle-0 {
+  from {
+    background-color: var(--row-flash-color);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes flash-cycle-1 {
+  from {
+    background-color: var(--row-flash-color);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.rowTooltip {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: clamp(62px, var(--tooltip-anchor-y), calc(100% - 62px));
+  z-index: 2;
+  display: none;
+  width: 228px;
+  min-height: 108px;
+  padding: 9px 11px;
+  transform: translateY(-50%);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--raised);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+  pointer-events: none;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 22px;
+  gap: 16px;
+  color: var(--ink);
+}
+
+.tooltipValue {
+  flex: none;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (min-width: 880px) and (hover: hover) and (pointer: fine) {
+  .row[data-tooltip-range="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 1px 0;
+    z-index: 0;
+    background: rgba(230, 230, 230, 0.07);
+    pointer-events: none;
+  }
+
+  .rowTooltip {
+    display: block;
+  }
+}
+
+/* ---- spread divider ---- */
+
+.spreadRow {
+  height: 29px;
+  background: #242424;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 1fr;
+  align-items: center;
+  padding: 0 13px;
+  color: #8c8c8c;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  border-block: 1px solid var(--line);
+}
+
+.spreadRow .cellNum {
+  text-align: right;
+}
+
+/* ---- empty / recovery state ---- */
+
+.emptyState {
+  min-height: 677px;
+  display: grid;
+  place-items: center;
+  padding: 24px 13px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* ---- footer controls ---- */
+
+.footer {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 13px;
+  border-top: 1px solid #272727;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.controlEnd {
+  margin-left: auto;
+}
+
+.control select {
+  background: var(--raised);
+  border: 1px solid #2c2c2c;
+  border-radius: 4px;
+  color: #ddd;
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 6px;
+}
+
+.shell select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- connection status ---- */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 1px 0;
+  color: #cfcfcf;
+  font-size: 11px;
+}
+
+.statusDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+}
+
+.status[data-state="live"] .statusDot,
+.headerDot[data-state="live"] {
+  background: var(--live);
+}
+
+.status[data-state="connecting"] .statusDot,
+.status[data-state="reconnecting"] .statusDot,
+.headerDot[data-state="connecting"],
+.headerDot[data-state="reconnecting"] {
+  background: var(--warn);
+}
+
+.status[data-state="offline"] .statusDot,
+.headerDot[data-state="offline"] {
+  background: var(--down);
+}
+
+.status[data-state="connecting"] .statusDot,
+.status[data-state="reconnecting"] .statusDot {
+  animation: status-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ---- accessibility helpers ---- */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row[data-flash-cycle] {
+    animation: none;
+  }
+
+  .status[data-state] .statusDot {
+    animation: none;
+  }
+}
